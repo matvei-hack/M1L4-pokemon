@@ -23,6 +23,22 @@ def mypokemon(message):
     else:
         bot.reply_to(message, "У тебя ещё нет покемона, создай его командой /go")
 
+
+@bot.message_handler(commands=['feed'])
+def feed(message):
+    username = message.from_user.username
+    if username in Pokemon.pokemons.keys():
+        pokemon = Pokemon.pokemons[username]
+        gained, leveled_up = pokemon.feed()
+        text = f"Ты покормил {pokemon.get_name()}! +{gained} опыта."
+        if leveled_up:
+            text += f"\n🎉 Покемон вырос до уровня {pokemon.get_level()}!"
+        bot.reply_to(message, text)
+    else:
+        bot.reply_to(message, "Сначала создай покемона командой /go")
+
+
+
 @bot.message_handler(commands=['rename'])
 def rename(message):
     username = message.from_user.username
