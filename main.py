@@ -52,4 +52,6 @@ def rename(message):
     else:
         bot.reply_to(message, "Сначала создай покемона командой /go")
 
+        
+
 bot.infinity_polling(none_stop=True)
