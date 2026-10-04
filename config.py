@@ -1,1 +1,1 @@
-token = "8632645142:AAE3NgqE-2Aot5IsN5TtN0fj0kxZ8GhN36U"
+token = "ваш токен"
