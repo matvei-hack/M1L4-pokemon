@@ -1,4 +1,5 @@
 from random import randint
+from datetime import datetime, timedelta
 import requests
 
 class Pokemon:
@@ -24,10 +25,13 @@ class Pokemon:
 
         self.is_rare = self.check_rare()
         if self.is_rare:
-            self.achievements.append("🌟 Поймал редкого покемона!")
+            self.achievements.append("Поймал редкого покемона")
 
         self.hp = randint(50, 100)
         self.power = randint(10, 30)
+
+        # Время последнего кормления (для метода feed с health)
+        self.last_feed_time = datetime.now()
 
         Pokemon.pokemons[pokemon_trainer] = self
 
@@ -88,7 +92,7 @@ class Pokemon:
     def set_weight(self, new_weight):
         self.weight = new_weight
 
-    def feed(self):
+    def exp_feed(self):
         gained = randint(5, 20)
         self.exp += gained
         self.hunger = min(100, self.hunger + 30)
@@ -98,12 +102,25 @@ class Pokemon:
             self.exp -= self.level * 50
             self.level += 1
             leveled_up = True
-        if self.level == 5 and " Достиг 5 уровня!" not in self.achievements:
-            self.achievements.append("Достиг 5 уровня!")
-        if self.level == 10 and " Достиг 10 уровня!" not in self.achievements:
-            self.achievements.append(" достиг 10 уровня!")
+
+        if self.level == 5 and "Достиг 5 уровня" not in self.achievements:
+            self.achievements.append("Достиг 5 уровня")
+        if self.level == 10 and "Достиг 10 уровня" not in self.achievements:
+            self.achievements.append("Достиг 10 уровня")
 
         return gained, leveled_up
+
+    # Исправленный метод кормления — увеличивает здоровье по таймеру
+    def feed(self, feed_interval=20, hp_increase=10):
+        current_time = datetime.now()
+        delta_time = timedelta(seconds=feed_interval)
+        if (current_time - self.last_feed_time) > delta_time:
+            self.hp += hp_increase
+            self.last_feed_time = current_time
+            return f"Здоровье покемона увеличено. Текущее здоровье: {self.hp}"
+        else:
+            next_feed_time = self.last_feed_time + delta_time
+            return f"Следующее время кормления покемона: {next_feed_time}"
 
     def heal(self, amount=20):
         self.hp = min(100, self.hp + amount)
@@ -113,7 +130,7 @@ class Pokemon:
         if isinstance(enemy, Wizard):
             chance = randint(1, 5)
             if chance == 1:
-                return f" Покемон-волшебник @{enemy.pokemon_trainer} применил щит и уклонился от атаки!"
+                return f"Покемон-волшебник @{enemy.pokemon_trainer} применил щит и уклонился от атаки"
 
         if enemy.hp > self.power:
             enemy.hp -= self.power
@@ -121,11 +138,11 @@ class Pokemon:
         else:
             enemy.hp = 0
             self.exp += 25
-            self.achievements.append(f" Победа над @{enemy.pokemon_trainer}")
-            return f"Победа @{self.pokemon_trainer} над @{enemy.pokemon_trainer}! (+25 опыта)"
+            self.achievements.append(f"Победа над @{enemy.pokemon_trainer}")
+            return f"Победа @{self.pokemon_trainer} над @{enemy.pokemon_trainer}. +25 опыта"
 
     def info(self):
-        rare_mark = "  РЕДКИЙ!" if self.is_rare else ""
+        rare_mark = " РЕДКИЙ" if self.is_rare else ""
         achievements_text = '\n'.join(self.achievements) if self.achievements else "Пока нет"
         return (
             f"Имя твоего покемона: {self.name}{rare_mark}\n"
@@ -145,14 +162,6 @@ class Pokemon:
         return self.img
 
 
-
-
-
-
-#Для класса Wizard не получится просто исправить метод атаки, так как его супер сила используется только
-# когда нападают на него. Поэтому нам нужно дополнить метод в родительском классе.
-#До атаки нужно проверить является ли наш враг волшебником. Если это так, то
-#с помощью рэндом определим шанс использования супер щита для уклонения от удара:
 class Wizard(Pokemon):
     def __init__(self, pokemon_trainer):
         super().__init__(pokemon_trainer)
@@ -161,20 +170,14 @@ class Wizard(Pokemon):
     def attack(self, enemy):
         return super().attack(enemy)
 
+    # У волшебника здоровье увеличивается больше
+    def feed(self, feed_interval=20, hp_increase=20):
+        return super().feed(feed_interval, hp_increase)
+
     def info(self):
-        return "У тебя покемон-волшебник \n" + super().info()
+        return "У тебя покемон-волшебник\n" + super().info()
 
 
-
-
-
-
-
-#Рассмотрим метод атаки для класса Fighter
-# У этого подкласса будет случайно увеличиваться сила при атаке
-# Поэтому нужно создать переменную со случайным значением - супербустом
-#которая будет прибавляться к основной силе, 
-#но после атаки прежняя сила должна восстанавливаться:
 class Fighter(Pokemon):
     def __init__(self, pokemon_trainer):
         super().__init__(pokemon_trainer)
@@ -185,7 +188,11 @@ class Fighter(Pokemon):
         self.power += super_power
         result = super().attack(enemy)
         self.power -= super_power
-        return result + f"\n Боец применил супер-атаку силой: {super_power}"
+        return result + f"\nБоец применил супер-атаку силой: {super_power}"
+
+    # У бойца интервал кормления меньше
+    def feed(self, feed_interval=10, hp_increase=10):
+        return super().feed(feed_interval, hp_increase)
 
     def info(self):
-        return "У тебя покемон-боец \n" + super().info()
+        return "У тебя покемон-боец\n" + super().info()

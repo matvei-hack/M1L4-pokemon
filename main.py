@@ -31,16 +31,46 @@ def mypokemon(message):
     else:
         bot.reply_to(message, "У тебя ещё нет покемона, создай его командой /go")
 
+@bot.message_handler(commands=['info'])
+def info(message):
+    if message.from_user.username in Pokemon.pokemons.keys():
+        pok = Pokemon.pokemons[message.from_user.username]
+        bot.send_message(message.chat.id, pok.info())
+    else:
+        bot.reply_to(message, "Сначала создай покемона командой /go")
+
+# Начисление опыта и уровня
+@bot.message_handler(commands=['train'])
+def train(message):
+    username = message.from_user.username
+    if username in Pokemon.pokemons.keys():
+        pokemon = Pokemon.pokemons[username]
+        gained, leveled_up = pokemon.exp_feed()
+        text = f"Ты потренировал {pokemon.get_name()}. +{gained} опыта."
+        if leveled_up:
+            text += f" Уровень вырос до {pokemon.get_level()}."
+        bot.reply_to(message, text)
+    else:
+        bot.reply_to(message, "Сначала создай покемона командой /go")
+
+# Кормление для здоровья (с таймером last_feed_time)
 @bot.message_handler(commands=['feed'])
 def feed(message):
     username = message.from_user.username
     if username in Pokemon.pokemons.keys():
         pokemon = Pokemon.pokemons[username]
-        gained, leveled_up = pokemon.feed()
-        text = f"Ты покормил {pokemon.get_name()}. +{gained} опыта."
-        if leveled_up:
-            text += f" Уровень вырос до {pokemon.get_level()}."
-        bot.reply_to(message, text)
+        result = pokemon.feed()
+        bot.reply_to(message, result)
+    else:
+        bot.reply_to(message, "Сначала создай покемона командой /go")
+
+@bot.message_handler(commands=['heal'])
+def heal(message):
+    username = message.from_user.username
+    if username in Pokemon.pokemons.keys():
+        pokemon = Pokemon.pokemons[username]
+        new_hp = pokemon.heal()
+        bot.reply_to(message, f"Твой покемон восстановил здоровье. Текущее HP: {new_hp}")
     else:
         bot.reply_to(message, "Сначала создай покемона командой /go")
 
@@ -71,13 +101,13 @@ def attack_pok(message):
         else:
             bot.send_message(message.chat.id, "Сражаться можно только с покемонами")
     else:
-        bot.send_message(message.chat.id, "чтобы атаковать нужно ответить на сообщение того кого хочешь атаковать")
+        bot.send_message(message.chat.id, "Чтобы атаковать, нужно ответить на сообщение того, кого хочешь атаковать")
 
 @bot.message_handler(commands=['battle'])
 def battle(message):
     username = message.from_user.username
     if username not in Pokemon.pokemons.keys():
-        bot.reply_to(message, "сначала создай покемона /go")
+        bot.reply_to(message, "Сначала создай покемона командой /go")
         return
 
     pokemon = Pokemon.pokemons[username]
@@ -106,21 +136,12 @@ def battle(message):
     if pokemon.hp <= 0 and enemy.hp <= 0:
         log.append("Ничья")
     elif pokemon.hp <= 0:
-        log.append(f"твой покемон проиграл дикому {enemy.get_name()}")
+        log.append(f"Твой покемон проиграл дикому {enemy.get_name()}")
     elif enemy.hp <= 0:
-        log.append(f"ты победил дикого {enemy.get_name()}")
+        log.append(f"Ты победил дикого {enemy.get_name()}")
     else:
-        log.append("бой закончился вничью ")
-    bot.send_message(message.chat.id, '\n'.join(log))
+        log.append("Бой закончился вничью по лимиту раундов")
 
-@bot.message_handler(commands=['heal'])
-def heal(message):
-    username = message.from_user.username
-    if username in Pokemon.pokemons.keys():
-        pokemon = Pokemon.pokemons[username]
-        new_hp = pokemon.heal()
-        bot.reply_to(message, f"твой покемон восстановил здоровье. текущее HP: {new_hp}")
-    else:
-        bot.reply_to(message, "сначала создай покемона командой /go")
+    bot.send_message(message.chat.id, '\n'.join(log))
 
 bot.infinity_polling(none_stop=True)
